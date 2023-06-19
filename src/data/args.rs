@@ -115,12 +115,10 @@ pub struct CliArgs {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Default)]
 pub struct ConfigArgs {
-    pub prompt: Option<String>,
     pub chat_model: Option<String>,
     pub edit_model: Option<String>,
     pub max_tokens: Option<i32>,
     pub temp: Option<f32>,
-    pub data_prompt: Option<String>,
     pub no_preview: Option<bool>,
     pub open_ai_token_env: Option<String>,
     pub open_ai_token: Option<String>,
@@ -215,10 +213,7 @@ impl CliArgs {
         let mode = {
             // for now favour data argument over stdin by default
             let stdin = get_stdin();
-            let data_prompt = self
-                .data_prompt
-                .clone()
-                .map_or_else(|| config_args.data_prompt.clone(), Some);
+            let data_prompt = self.data_prompt.clone();
 
             if config_args.always_edit.unwrap_or(self.edit) {
                 let edit_data = match (data_prompt, stdin.is_empty()) {
@@ -265,7 +260,6 @@ impl CliArgs {
             debug: self.debug,
             preview_data_generation: self
                 .data_prompt
-                .map_or_else(|| config_args.data_prompt, Some)
                 .map(|_| {
                     !self
                         .no_preview
@@ -295,9 +289,11 @@ impl CliArgs {
 
         let prompt = Prompt {
             generated_data: None,
-            prompt: config_args.prompt.unwrap_or(self.prompt.clone()),
+            prompt: self.prompt,
             final_chat_prompt: None,
-            act_as: self.act_as.unwrap_or(config_args.act_as.unwrap_or(default_act_as())),
+            act_as: self
+                .act_as
+                .unwrap_or(config_args.act_as.unwrap_or(default_act_as())),
         };
 
         debug!("Prompt: {:#?}", prompt);
