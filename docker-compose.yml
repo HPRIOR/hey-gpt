@@ -1,0 +1,47 @@
+version: '3.4'
+services:
+  weaviate:
+    container_name: weaviate
+    volumes:
+      - $HOME/docker/weaviate/data/:/var/lib/weaviate
+    command:
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8080'
+    - --scheme
+    - http
+    image: semitechnologies/weaviate:1.18.0
+    ports:
+    - 8080:8080
+    restart: on-failure:0
+    environment:
+      PORT: 8000
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'none'
+      ENABLE_MODULES: ''
+      CLUSTER_HOSTNAME: 'node1'
+
+  retrieval_plugin:
+    container_name: retrieval
+    build: 
+      context: $HOME/Code/chatgpt-retrieval-plugin/
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    environment:
+      DATASTORE: 'weaviate'
+      WEAVIATE_HOST: 'http://weaviate'
+      WEAVIATE_PORT: 8080
+      WEAVIATE_INDEX: 'OpenAIDocument'
+      WEAVIATE_BATCH_SIZE: 20
+      WEAVIATE_BATCH_TIMEOUT_RETRIES: 3
+      WEAVIATE_BATCH_NUM_WORKERS: 1
+    ports:
+    - 8000:8000
+    depends_on: 
+      - weaviate
+
+

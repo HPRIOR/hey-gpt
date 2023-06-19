@@ -1,0 +1,7 @@
+target
+.env
+.idea
+.DS_Store
+*/**/.DS_Store
+mac
+resources
