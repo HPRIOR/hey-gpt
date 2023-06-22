@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use log::debug;
 
 use crate::{
-    effect::{Effects, MemSaveInp, SaveHistoryInput},
+    effect::{Effects, LongMemSaveInp, ShortMemInput},
     model::{Mode, Model},
 };
 
@@ -39,12 +39,12 @@ impl Action for SuccessState {
 
                     if model.memory.enabled {
                         debug!("Saving prompt and response to database");
-                        let user_input = MemSaveInp {
+                        let user_input = LongMemSaveInp {
                             text: prompt.clone(),
                             author: "user".to_string(),
                         };
 
-                        let assistant_response = MemSaveInp {
+                        let assistant_response = LongMemSaveInp {
                             text: response.clone(),
                             author: "assistant".to_string(),
                         };
@@ -56,12 +56,12 @@ impl Action for SuccessState {
                     }
 
                     // save chat history to short term storage
-                    let user_input = SaveHistoryInput {
+                    let user_input = ShortMemInput {
                         author: "user".to_string(),
                         content: prompt
                     };
 
-                    let assistant_response = SaveHistoryInput {
+                    let assistant_response = ShortMemInput {
                         author:  "assistant".to_string(),
                         content: response
                     };

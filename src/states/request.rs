@@ -5,7 +5,7 @@ use chrono::Duration;
 use log::debug;
 
 use crate::{
-    effect::{ChatRequestInput, EditRequestInput, Effects, MemQueryOpt, QueryWindow},
+    effect::{ChatRequestInput, EditRequestInput, Effects, LongMemQueryOpt, QueryWindow},
     model::{ChatData, EditData, Mode, Model},
 };
 
@@ -41,8 +41,8 @@ fn get_potential_prompts(model: &Model) -> PotentialPrompt {
     let prompt = &model.prompt.prompt;
     let data_prompt_result = &model.prompt.generated_data;
     let std_in = match &model.mode {
-        Mode::Chat(ChatData::DataStdIn(data)) => Some(data),
-        Mode::Edit(EditData::DataStdIn(data)) => Some(data),
+        Mode::Chat(ChatData::DataFromStdIn(data)) => Some(data),
+        Mode::Edit(EditData::DataFromStdIn(data)) => Some(data),
         _ => None,
     };
     PotentialPrompt {
@@ -98,7 +98,7 @@ impl Action for EditState {
                 let response = self
                     .effects
                     .requester
-                    .edit_request_stream(request_input, &model.algo)
+                    .edit_request_stream(request_input)
                     .await?;
 
                 let data = self.effects.displayer.print_stream(response).await;
@@ -144,7 +144,7 @@ impl Action for ChatState {
             // history file should be here as check done in argument parsing
             self.effects
                 .history
-                .get_history( model.memory.convo_len)
+                .get_history(model.memory.convo_len)
                 .await?
         } else {
             Default::default()
@@ -154,23 +154,25 @@ impl Action for ChatState {
 
         let memories = {
             if model.memory.enabled {
-                let convo_query_window = QueryWindow{
+                let convo_query_window = QueryWindow {
                     min: None,
                     // this is a bit messy, ideally should be from the first message before the
                     // window
-                    max: convo_history.first().map(|dialogue| dialogue.created_at.sub(Duration::seconds(1)))
+                    max: convo_history
+                        .first()
+                        .map(|dialogue| dialogue.created_at.sub(Duration::seconds(1))),
                 };
 
-                let convo_query_input = MemQueryOpt {
+                let convo_query_input = LongMemQueryOpt {
                     category: model.memory.convo.to_string(),
                     query_window: convo_query_window,
                 };
 
-                let mut mem_query_input: Vec<MemQueryOpt> = model
+                let mut mem_query_input: Vec<LongMemQueryOpt> = model
                     .memory
                     .memories
                     .iter()
-                    .map(|memory| MemQueryOpt {
+                    .map(|memory| LongMemQueryOpt {
                         category: memory.to_string(),
                         query_window: QueryWindow {
                             max: None,
@@ -245,11 +247,7 @@ impl Action for ChatState {
         };
 
         debug!("Sending query");
-        let response_stream = self
-            .effects
-            .requester
-            .chat_request_stream(&request, &model)
-            .await?;
+        let response_stream = self.effects.requester.chat_request_stream(&request).await?;
 
         let result = self.effects.displayer.print_stream(response_stream).await;
         Ok((
@@ -269,7 +267,5 @@ impl Action for ChatState {
 mod tests {
 
     #[test]
-    fn hello_world() {
-
-    }
+    fn hello_world() {}
 }

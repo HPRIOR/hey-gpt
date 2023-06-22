@@ -1,7 +1,4 @@
-use std::{
-    error::Error,
-    process::exit,
-};
+use std::{error::Error, process::exit};
 
 use async_recursion::async_recursion;
 use clap::Parser;
@@ -11,20 +8,17 @@ use log::debug;
 use model::Model;
 use states::Action;
 
-use crate::{states::init::InitState, data::args::CliArgs};
+use crate::{data::args::CliArgs, states::init::InitState};
 
-
-mod output;
-mod utils;
-mod effect;
-mod states;
 mod data;
+mod effect;
+mod output;
+mod states;
+mod utils;
 
-// todo, make configurable 
 pub const COMPLETION_URL: &str = "https://api.openai.com/v1/chat/completions";
 pub const EDIT_URL: &str = "https://api.openai.com/v1/edits";
-// pub const CONTEXT_URL: &str = "http://localhost:8000"; 
-pub const DEFAULT_CONVO: &str = "a4c80afe-f225-11ed-a05b-0242ac120003"; 
+pub const DEFAULT_CONVO: &str = "a4c80afe-f225-11ed-a05b-0242ac120003";
 
 fn setup_logger(is_debug: bool) -> Result<(), fern::InitError> {
     fern::Dispatch::new()
@@ -46,7 +40,6 @@ fn setup_logger(is_debug: bool) -> Result<(), fern::InitError> {
     Ok(())
 }
 
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = CliArgs::parse();
@@ -66,7 +59,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 #[async_recursion(?Send)]
 async fn main_loop(action: Box<dyn Action>, model: Model) {
     debug!("Executing action for {} state", action._type());
-    debug!("Using model {:#?}", &model);
+    debug!("Using model {}", &model);
 
     let execute_result = action.execute(model).await;
 

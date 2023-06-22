@@ -23,12 +23,12 @@ impl Action for DataRequestState {
         let request = self
             .effects
             .requester
-            .chat_request_stream(&[request_input], &model)
+            .chat_request_stream(&[request_input])
             .await?;
 
         let data = self.effects.displayer.print_stream(request).await;
-        let preview_wanted = &model.config.preview_data_generation;
 
+        let preview_wanted = &model.config.preview_data_generation;
         if *preview_wanted {
             Ok((
                 Box::new(PreviewState {

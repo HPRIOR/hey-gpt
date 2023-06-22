@@ -8,17 +8,18 @@ pub struct Algo {
     pub max_tokens: Option<i32>,
 }
 
+
 #[derive(Debug, Clone)]
 pub enum EditData {
-    DataPrompt(String),
-    DataStdIn(String),
+    DataFromPrompt(String),
+    DataFromStdIn(String),
 }
 
 #[derive(Debug, Clone)]
 pub enum ChatData {
-    DataPrompt(String),
-    DataStdIn(String),
-    None,
+    DataFromPrompt(String),
+    DataFromStdIn(String),
+    NoAdditionalData,
 }
 
 #[derive(Debug, Clone)]
@@ -51,12 +52,14 @@ pub struct Config {
     pub context_url: String
 }
 
+
+// prompt could maybe be simplified 
 #[derive(Debug, Clone, Default)]
 pub struct Prompt {
     pub generated_data: Option<String>,
     pub prompt: String,
     pub final_chat_prompt: Option<String>,
-    pub act_as: String,
+    pub act_as: String, 
 }
 
 #[derive(Debug, Clone, Default)]
@@ -110,7 +113,7 @@ impl Display for Model {
 
 impl Default for Mode {
     fn default() -> Self {
-        Mode::Chat(ChatData::None)
+        Mode::Chat(ChatData::NoAdditionalData)
     }
 }
 

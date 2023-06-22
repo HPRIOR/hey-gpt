@@ -12,16 +12,16 @@ use crate::data::dtos::{
 };
 
 
-use super::{AiMemory, MemOutput, MemQueryOpt, MemSaveInp};
+use super::{LongMemEffect, LongMemOutput, LongMemQueryOpt, LongMemSaveInp};
 
-pub struct GptContext {
+pub struct LongTermGptMemory {
     client: Client,
     bearer_auth: String,
     top_k: u32,
     context_url: String
 }
 
-impl GptContext {
+impl LongTermGptMemory {
     pub fn new(client: Client, bearer_auth: String, top_k: u32, context_url: String) -> Self {
         Self {
             client,
@@ -33,15 +33,15 @@ impl GptContext {
 }
 
 #[async_trait]
-impl AiMemory for GptContext {
+impl LongMemEffect for LongTermGptMemory {
     async fn save(
         &self,
-        ctx_input: &[MemSaveInp],
+        ctx_input: &[LongMemSaveInp],
         category: &str,
     ) -> Result<Vec<String>, Box<dyn Error>> {
         let documents: Vec<RetrievalUpsertDTO> = ctx_input
             .iter()
-            .map(|MemSaveInp { text, author }| RetrievalUpsertDTO {
+            .map(|LongMemSaveInp { text, author }| RetrievalUpsertDTO {
                 id: None,
                 metadata: Some(UpsertMetadataDTO {
                     created_at: chrono::offset::Utc::now().to_rfc3339(),
@@ -74,12 +74,12 @@ impl AiMemory for GptContext {
     async fn query(
         &self,
         query: &str,
-        query_options: &[MemQueryOpt],
-    ) -> Result<Vec<MemOutput>, Box<dyn Error>> {
+        query_options: &[LongMemQueryOpt],
+    ) -> Result<Vec<LongMemOutput>, Box<dyn Error>> {
         let queries: Vec<QueryDTO> = query_options
             .iter()
             .map(
-                |MemQueryOpt {
+                |LongMemQueryOpt {
                      category,
                      query_window,
                  }| QueryDTO {
@@ -120,9 +120,9 @@ impl AiMemory for GptContext {
 
         let top_k_best_match = document_results.iter().take(self.top_k as usize);
 
-        let result: Vec<MemOutput> = top_k_best_match
+        let result: Vec<LongMemOutput> = top_k_best_match
             .into_iter()
-            .map(|bm| MemOutput {
+            .map(|bm| LongMemOutput {
                 text: bm.text.clone(),
                 created_at: bm
                     .metadata
@@ -164,25 +164,25 @@ mod tests {
     use chrono::Utc;
     use reqwest::Client;
 
-    use crate::effect::{gpt_context::GptContext, AiMemory, MemQueryOpt, QueryWindow, MemSaveInp};
+    use crate::effect::{gpt_context::LongTermGptMemory, LongMemEffect, LongMemQueryOpt, QueryWindow, LongMemSaveInp};
 
     #[tokio::test]
     async fn test_hello_world() {
         let client = Client::new();
         let context  = 
-            GptContext::new(
+            LongTermGptMemory::new(
                 client, 
                 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkhhcnJ5IFByaW9yIiwiaWF0IjoxNTE2MjM5MDIyfQ.2Rf_63_CL4WMdmS01x8eQx7F4nbi7QXJW4QRAM2vl_0".to_string(), 
                 10,
                 "".to_string());
 
-        let effect: Box<dyn AiMemory> = Box::new(context);
+        let effect: Box<dyn LongMemEffect> = Box::new(context);
 
-        let result = effect.save(&[MemSaveInp{text: "This is a new embedding".to_string(), author: "user".to_string()}], "a4c80afe-f225-11ed-a05b-0242ac120003").await;
+        let result = effect.save(&[LongMemSaveInp{text: "This is a new embedding".to_string(), author: "user".to_string()}], "a4c80afe-f225-11ed-a05b-0242ac120003").await;
 
         println!("{:#?}", result);
 
-        let query_opt = MemQueryOpt{category: "a4c80afe-f225-11ed-a05b-0242ac120003".to_string(),  query_window: QueryWindow { min: None, max: Some(Utc::now()) }};
+        let query_opt = LongMemQueryOpt{category: "a4c80afe-f225-11ed-a05b-0242ac120003".to_string(),  query_window: QueryWindow { min: None, max: Some(Utc::now()) }};
         let result = effect.query("can you summerise our conversation so far?", &[query_opt]).await;
 
         println!("{:#?}", result);

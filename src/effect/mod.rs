@@ -11,21 +11,16 @@ use chrono::{DateTime, Utc};
 use futures::Stream;
 use reqwest::Client;
 
-use crate::model::{Algo, Model};
+use crate::model::Model;
 
 use self::{
-    conversation::YamlHistory, gpt_context::GptContext, gpt_request::GptRequest, output::Output,
+    conversation::YamlHistory, gpt_context::LongTermGptMemory, gpt_request::GptRequest, output::Output,
     user::User,
 };
 
-//--- Shared ---//
-#[derive(Debug)]
-pub struct QueryWindow {
-    pub min: Option<DateTime<Utc>>,
-    pub max: Option<DateTime<Utc>>,
-}
 
 //--- Ai Requests ---//
+#[derive(Debug)]
 pub struct EditRequestInput {
     pub instruction: String,
     pub input: String,
@@ -38,17 +33,15 @@ pub struct ChatRequestInput {
 }
 
 #[async_trait]
-pub trait RequestEffect: Sync + Send {
+pub trait AiRequestEffect: Sync + Send {
     async fn chat_request_stream(
         &self,
         request: &[ChatRequestInput],
-        model: &Model,
     ) -> Result<Pin<Box<dyn Stream<Item = Vec<String>> + Send + 'static>>, Box<dyn Error>>;
 
     async fn edit_request_stream(
         &self,
         request: EditRequestInput,
-        algo: &Algo,
     ) -> Result<Pin<Box<dyn Stream<Item = Vec<String>> + Send + 'static>>, Box<dyn Error>>;
 }
 
@@ -71,26 +64,32 @@ pub enum UserCycleResponse {
     NextLeft,
 }
 
-pub trait UserEffect: Send + Sync {
+pub trait InteractionEffect: Send + Sync {
     fn elicit_cycle_response(&self, user_prompt: &str) -> UserCycleResponse;
     fn edit_data_gen_prompt(&self, initial_prompt: &str) -> Result<String, Box<dyn Error>>;
 }
 
 //--- Memory ---//
+#[derive(Debug)]
+pub struct QueryWindow {
+    pub min: Option<DateTime<Utc>>,
+    pub max: Option<DateTime<Utc>>,
+}
 
-pub struct MemSaveInp {
+#[derive(Debug)]
+pub struct LongMemSaveInp {
     pub text: String,
     pub author: String,
 }
 
 #[derive(Debug)]
-pub struct MemQueryOpt {
+pub struct LongMemQueryOpt {
     pub category: String,
     pub query_window: QueryWindow,
 }
 
 #[derive(Debug)]
-pub struct MemOutput {
+pub struct LongMemOutput {
     pub text: String,
     pub created_at: DateTime<Utc>,
     pub author: String,
@@ -98,63 +97,61 @@ pub struct MemOutput {
 }
 
 #[async_trait]
-pub trait AiMemory: Sync + Send {
+pub trait LongMemEffect: Sync + Send {
     async fn save(
         &self,
-        ctx_inp: &[MemSaveInp],
+        input: &[LongMemSaveInp],
         category: &str,
     ) -> Result<Vec<String>, Box<dyn Error>>;
     async fn query(
         &self,
         query: &str,
-        query_opts: &[MemQueryOpt],
-    ) -> Result<Vec<MemOutput>, Box<dyn Error>>;
+        query_opts: &[LongMemQueryOpt],
+    ) -> Result<Vec<LongMemOutput>, Box<dyn Error>>;
     async fn delete(&self, id: &str) -> Result<(), Box<dyn Error>>;
 }
 
-//--- Conversation History ---//
-
-pub struct SaveHistoryInput {
+pub struct ShortMemInput {
     pub author: String,
     pub content: String,
 }
 
 #[derive(Debug)]
-pub struct HistoryOutput {
+pub struct ShortMemOutput {
     pub author: String,
     pub created_at: DateTime<Utc>,
     pub content: String,
 }
 
 #[async_trait]
-pub trait HistoryEffect: Sync + Send {
+pub trait ShortMemEffect: Sync + Send {
     async fn save_history(
         &self,
-        input: &[SaveHistoryInput],
+        input: &[ShortMemInput],
     ) -> Result<(), Box<dyn Error>>;
     async fn get_history(
         &self,
         len: usize,
-    ) -> Result<Vec<HistoryOutput>, Box<dyn Error>>;
+    ) -> Result<Vec<ShortMemOutput>, Box<dyn Error>>;
 }
 
 pub struct Effects {
-    pub requester: Box<dyn RequestEffect>,
+    pub requester: Box<dyn AiRequestEffect>,
     pub displayer: Box<dyn DisplayEffect>,
-    pub user: Box<dyn UserEffect>,
-    pub context: Box<dyn AiMemory>,
-    pub history: Box<dyn HistoryEffect>,
+    pub user: Box<dyn InteractionEffect>,
+    pub context: Box<dyn LongMemEffect>,
+    pub history: Box<dyn ShortMemEffect>,
 }
 
 impl Effects {
     pub fn new(model: &Model) -> Self {
-        let requester = Box::new(GptRequest::new(Client::new(), model.open_ai_token.clone()));
+        let requester = Box::new(GptRequest::new(Client::new(), model.open_ai_token.clone(), model.clone()));
 
         let displayer = Box::new(Output);
         let user_displayer = Box::new(Output);
         let user = Box::new(User(user_displayer));
 
-        let context = Box::new(GptContext::new(
+        let context = Box::new(LongTermGptMemory::new(
             Client::new(),
             model.context_token.clone(),
             model.memory.top_k,

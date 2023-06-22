@@ -9,27 +9,27 @@ use log::debug;
 use reqwest::Client;
 
 use crate::data::model::Model;
-use crate::{model::Algo, utils::Transpose, COMPLETION_URL, EDIT_URL};
+use crate::{utils::Transpose, COMPLETION_URL, EDIT_URL};
 
-use super::{ChatRequestInput, EditRequestInput, RequestEffect};
+use super::{ChatRequestInput, EditRequestInput, AiRequestEffect};
 
 pub struct GptRequest {
     client: Client,
     auth_token: String,
+    model: Model
 }
 
 impl GptRequest {
-    pub fn new(client: Client, auth_token: String) -> Self {
-        Self { client, auth_token }
+    pub fn new(client: Client, auth_token: String, model: Model) -> Self {
+        Self { client, auth_token, model }
     }
 }
 
 #[async_trait]
-impl RequestEffect for GptRequest {
+impl AiRequestEffect for GptRequest {
     async fn chat_request_stream(
         &self,
         request: &[ChatRequestInput],
-        model: &Model,
     ) -> Result<Pin<Box<dyn Stream<Item = Vec<String>> + Send + 'static>>, Box<dyn Error>> {
         let request = ChatRequestDTO {
             messages: request
@@ -39,10 +39,10 @@ impl RequestEffect for GptRequest {
                     role: role.to_string(),
                 })
                 .collect(),
-            model: model.algo.chat_model.to_string(),
+            model: self.model.algo.chat_model.to_string(),
             n: 1,
-            temperature: model.algo.temp,
-            max_tokens: model.algo.max_tokens,
+            temperature: self.model.algo.temp,
+            max_tokens: self.model.algo.max_tokens,
             stream: true,
         };
 
@@ -84,7 +84,6 @@ impl RequestEffect for GptRequest {
     async fn edit_request_stream(
         &self,
         request: EditRequestInput,
-        algo: &Algo,
     ) -> Result<Pin<Box<dyn Stream<Item = Vec<String>> + Send + 'static>>, Box<dyn Error>> {
         // no such thing as streaming edit streams atm so just duplicating for now
         debug!(
@@ -96,9 +95,9 @@ impl RequestEffect for GptRequest {
             EditRequestDTO {
                 input: request.input,
                 instruction: request.instruction,
-                model: algo.edit_model.clone(),
+                model: self.model.algo.edit_model.clone(),
                 n: 1,
-                temperature: algo.temp,
+                temperature: self.model.algo.temp,
             }
         };
 

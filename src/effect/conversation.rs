@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils;
 
-use super::{HistoryEffect, HistoryOutput, SaveHistoryInput};
+use super::{ShortMemEffect, ShortMemOutput, ShortMemInput};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct DialogueSegment {
@@ -34,17 +34,17 @@ impl YamlHistory {
 
 
 #[async_trait]
-impl HistoryEffect for YamlHistory {
+impl ShortMemEffect for YamlHistory {
     async fn save_history(
         &self,
-        input: &[SaveHistoryInput],
+        input: &[ShortMemInput],
     ) -> Result<(), Box<dyn Error>> {
         if utils::file_exists_async(&self.convo_path).await {
             let script: Script = utils::deserialise_from_file_async(&self.convo_path).await?;
 
             let mut new_dialogue_segment: Vec<DialogueSegment> = input
                 .iter()
-                .map(|SaveHistoryInput { author, content }| DialogueSegment {
+                .map(|ShortMemInput { author, content }| DialogueSegment {
                     role: author.clone(),
                     content: content.clone(),
                     created_at: Utc::now(),
@@ -57,7 +57,7 @@ impl HistoryEffect for YamlHistory {
         } else {
             let dialogue: Vec<DialogueSegment> = input
                 .iter()
-                .map(|SaveHistoryInput { author, content }| DialogueSegment {
+                .map(|ShortMemInput { author, content }| DialogueSegment {
                     role: author.clone(),
                     content: content.clone(),
                     created_at: Utc::now(),
@@ -71,7 +71,7 @@ impl HistoryEffect for YamlHistory {
     async fn get_history(
         &self,
         len: usize,
-    ) -> Result<Vec<HistoryOutput>, Box<dyn Error>> {
+    ) -> Result<Vec<ShortMemOutput>, Box<dyn Error>> {
         let script: Script = utils::deserialise_from_file_async(&self.convo_path).await?;
 
         let dialogue_window = {
@@ -87,7 +87,7 @@ impl HistoryEffect for YamlHistory {
                      role,
                      content,
                      created_at,
-                 }| HistoryOutput {
+                 }| ShortMemOutput {
                     author: role.to_string(),
                     content: content.to_string(),
                     created_at: *created_at,

@@ -20,9 +20,6 @@ fn default_act_as() -> String {
     "You are a helpful AI assistant that will give responses in a computer terminal".to_string()
 }
 
-// todo! replace all arguments with defaults to Options, provide the defaults when parsing, and
-// only if not provided by the config file. The priority of CLI -> Config -> Default/Error should
-// be applied elsewhere to
 #[derive(Parser, Debug)]
 #[command(author = "Harry Prior")]
 #[command(version = "0.1.0")]
@@ -151,6 +148,7 @@ fn get_stdin() -> String {
 
 impl CliArgs {
     pub fn into_domain(self) -> Result<Model, Box<dyn Error>> {
+        // this probably belongs elsewhere
         let config_args = {
             let home = env::var("HOME")?;
             let paths = vec![
@@ -218,9 +216,9 @@ impl CliArgs {
             if config_args.always_edit.unwrap_or(self.edit) {
                 let edit_data = match (data_prompt, stdin.is_empty()) {
                     (Some(data_prompt), true) | (Some(data_prompt), false) => {
-                        EditData::DataPrompt(data_prompt)
+                        EditData::DataFromPrompt(data_prompt)
                     }
-                    (None, false) => EditData::DataStdIn(stdin),
+                    (None, false) => EditData::DataFromStdIn(stdin),
                     _ => {
                         eprintln!("Data must be provided for edit mode");
                         exit(1);
@@ -229,9 +227,9 @@ impl CliArgs {
                 Mode::Edit(edit_data)
             } else {
                 let chat_data = match (data_prompt, stdin.is_empty()) {
-                    (Some(data), true) | (Some(data), false) => ChatData::DataPrompt(data),
-                    (None, false) => ChatData::DataStdIn(stdin),
-                    _ => ChatData::None,
+                    (Some(data), true) | (Some(data), false) => ChatData::DataFromPrompt(data),
+                    (None, false) => ChatData::DataFromStdIn(stdin),
+                    _ => ChatData::NoAdditionalData,
                 };
                 Mode::Chat(chat_data)
             }
@@ -299,8 +297,7 @@ impl CliArgs {
         debug!("Prompt: {:#?}", prompt);
 
         let convo_file_path: PathBuf = vec![
-            config_args
-                .convo_dir
+            self.convo_dir
                 .clone()
                 .map(|dir| {
                     dir.replace(
@@ -311,7 +308,8 @@ impl CliArgs {
                     )
                 })
                 .unwrap_or_else(|| {
-                    self.convo_dir
+                    config_args
+                        .convo_dir
                         .clone()
                         .expect("Directory for storing conversation should be set")
                 }),

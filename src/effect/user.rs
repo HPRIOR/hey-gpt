@@ -4,12 +4,12 @@ use std::{thread, error::Error, io::{Write, Read}, process::Command, fs::File};
 use tempfile::NamedTempFile;
 use termion::{event::Key, input::TermRead};
 
-use super::{DisplayEffect, UserEffect, UserCycleResponse};
+use super::{DisplayEffect, InteractionEffect, UserCycleResponse};
 
 
 pub struct User(pub Box<dyn DisplayEffect>);
 
-impl UserEffect for User {
+impl InteractionEffect for User {
     fn elicit_cycle_response(&self, user_prompt: &str) -> UserCycleResponse {
         self.0.print(user_prompt);
 

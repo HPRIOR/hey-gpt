@@ -16,8 +16,8 @@ impl Action for InitState {
         model: Model,
     ) -> Result<(Box<dyn Action>, Model), Box<dyn Error>> {
         match &model.mode {
-            Mode::Chat(ChatData::DataPrompt(data_request_prompt))
-            | Mode::Edit(EditData::DataPrompt(data_request_prompt)) => Ok((
+            Mode::Chat(ChatData::DataFromPrompt(data_request_prompt))
+            | Mode::Edit(EditData::DataFromPrompt(data_request_prompt)) => Ok((
                 Box::new(DataRequestState {
                     effects: (*self).0,
                     prompt: data_request_prompt.clone(),
