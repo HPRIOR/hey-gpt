@@ -1,6 +1,5 @@
 use std::{error::Error, fmt::Display};
 
-use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,7 +26,6 @@ pub struct ChatRequestDTO {
     pub max_tokens: Option<i32>,
     pub stream: bool,
 }
-
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UsageDTO {
@@ -81,51 +79,6 @@ pub struct StreamChatResponseDTO {
     pub object: String,
 }
 
-#[derive(Debug)]
-struct StreamChatResponseDeserialiseError(Vec<String>);
-impl Error for StreamChatResponseDeserialiseError {}
-impl Display for StreamChatResponseDeserialiseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Error occured trying to deserialise StreamChatResponseDTO: {:#?} ",
-            self.0
-        )
-    }
-}
-
-impl TryFrom<Bytes> for StreamChatResponseDTO {
-    type Error = Box<dyn Error>;
-
-    fn try_from(value: Bytes) -> Result<Self, Self::Error> {
-        let data_str = String::from_utf8(value.to_vec())?;
-
-        let without_data = data_str.replace("data: ", "");
-
-        let split: Vec<&str> = without_data
-            .split("\n\n")
-            .filter(|s| !s.is_empty() && !s.contains("DONE") && s.contains("content"))
-            .collect();
-
-        if let Some(s) = split.first() {
-            Ok(serde_json::from_str(s)?)
-        } else {
-            Err(Box::new(StreamChatResponseDeserialiseError(
-                split.iter().map(|s| s.to_string()).collect(),
-            )))
-        }
-    }
-}
-
-impl From<StreamChatResponseDTO> for Vec<String> {
-    fn from(value: StreamChatResponseDTO) -> Self {
-        value
-            .choices
-            .into_iter()
-            .filter_map(|choice| choice.delta.content)
-            .collect()
-    }
-}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EditChoiceDTO {

@@ -35,7 +35,7 @@ impl DisplayEffect for Output {
         }
         // newline at end of output
         println!();
-        io::stdout().flush().unwrap();
+        // io::stdout().flush().unwrap();
         responses
     }
 
