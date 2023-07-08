@@ -8,7 +8,6 @@ pub struct Algo {
     pub max_tokens: Option<i32>,
 }
 
-
 #[derive(Debug, Clone)]
 pub enum EditData {
     DataFromPrompt(String),
@@ -35,7 +34,7 @@ pub struct Memory {
     pub convo: String,
     pub convo_len: usize,
     pub enabled: bool,
-    pub convo_path: String
+    pub convo_path: String,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -49,17 +48,16 @@ pub struct Output {
 pub struct Config {
     pub debug: bool,
     pub preview_data_generation: bool,
-    pub context_url: String
+    pub context_url: String,
 }
 
-
-// prompt could maybe be simplified 
+// prompt could maybe be simplified
 #[derive(Debug, Clone, Default)]
 pub struct Prompt {
     pub generated_data: Option<String>,
     pub prompt: String,
     pub final_chat_prompt: Option<String>,
-    pub act_as: String, 
+    pub act_as: String,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -116,4 +114,3 @@ impl Default for Mode {
         Mode::Chat(ChatData::NoAdditionalData)
     }
 }
-

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils;
 
-use super::{ShortMemEffect, ShortMemOutput, ShortMemInput};
+use super::{ShortMemEffect, ShortMemInput, ShortMemOutput};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 struct DialogueSegment {
@@ -32,13 +32,9 @@ impl YamlHistory {
     }
 }
 
-
 #[async_trait]
 impl ShortMemEffect for YamlHistory {
-    async fn save_history(
-        &self,
-        input: &[ShortMemInput],
-    ) -> Result<(), Box<dyn Error>> {
+    async fn save_history(&self, input: &[ShortMemInput]) -> Result<(), Box<dyn Error>> {
         if utils::file_exists_async(&self.convo_path).await {
             let script: Script = utils::deserialise_from_file_async(&self.convo_path).await?;
 
@@ -68,10 +64,7 @@ impl ShortMemEffect for YamlHistory {
         Ok(())
     }
 
-    async fn get_history(
-        &self,
-        len: usize,
-    ) -> Result<Vec<ShortMemOutput>, Box<dyn Error>> {
+    async fn get_history(&self, len: usize) -> Result<Vec<ShortMemOutput>, Box<dyn Error>> {
         let script: Script = utils::deserialise_from_file_async(&self.convo_path).await?;
 
         let dialogue_window = {
@@ -96,4 +89,3 @@ impl ShortMemEffect for YamlHistory {
             .collect())
     }
 }
-

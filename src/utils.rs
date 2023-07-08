@@ -1,7 +1,4 @@
-use std::{
-    error::Error,
-    io::Read,
-};
+use std::{error::Error, io::Read};
 
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::{
@@ -33,7 +30,6 @@ pub fn deserialise_from_file<T: DeserializeOwned>(file_path: &str) -> Result<T, 
     let t = serde_yaml::from_str(&contents)?;
     Ok(t)
 }
-
 
 pub async fn file_exists_async(file_path: &str) -> bool {
     fs::metadata(file_path).await.is_ok()

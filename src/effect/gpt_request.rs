@@ -5,7 +5,7 @@ use crate::data::dtos::{
     ChatRequestDTO, ChatRequestMsgDTO, EditRequestDTO, EditResponseDTO, StreamChatResponseDTO,
 };
 use async_trait::async_trait;
-use futures::{Stream, StreamExt, stream};
+use futures::{stream, Stream, StreamExt};
 use log::debug;
 use reqwest::Client;
 
@@ -111,7 +111,7 @@ impl AiRequestEffect for GptRequest {
                         .to_vec(),
                 )
                 .expect("Could not convert byte to string when serialising StreamChatResponse");
-                let response_vec =  parse_byte_to_response_dto(&str_from_byte);
+                let response_vec = parse_byte_to_response_dto(&str_from_byte);
                 stream::iter(response_vec.into_iter())
             })
             .map(|dto: StreamChatResponseDTO| -> Vec<String> {

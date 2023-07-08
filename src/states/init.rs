@@ -2,10 +2,12 @@ use std::error::Error;
 
 use async_trait::async_trait;
 
-use crate::{effect::Effects, model::{Model, Mode, ChatData, EditData}};
+use crate::{
+    effect::Effects,
+    model::{ChatData, EditData, Mode, Model},
+};
 
-use super::{Action, data_request::DataRequestState, request::RequestState};
-
+use super::{data_request::DataRequestState, request::RequestState, Action};
 
 pub struct InitState(pub Effects);
 

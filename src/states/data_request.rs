@@ -2,10 +2,12 @@ use std::error::Error;
 
 use async_trait::async_trait;
 
-use crate::{effect::{Effects, ChatRequestInput}, model::{Model, Prompt}};
+use crate::{
+    effect::{ChatRequestInput, Effects},
+    model::{Model, Prompt},
+};
 
-use super::{Action, preview::PreviewState, request::RequestState};
-
+use super::{preview::PreviewState, request::RequestState, Action};
 
 pub struct DataRequestState {
     pub effects: Effects,
@@ -18,7 +20,10 @@ impl Action for DataRequestState {
         self: Box<Self>,
         model: Model,
     ) -> Result<(Box<dyn Action>, Model), Box<dyn Error>> {
-        let request_input = ChatRequestInput{role: "user".to_string(), content: self.prompt.clone()};
+        let request_input = ChatRequestInput {
+            role: "user".to_string(),
+            content: self.prompt.clone(),
+        };
 
         let request = self
             .effects

@@ -1,4 +1,3 @@
-pub mod model;
-pub mod dtos;
 pub mod args;
-
+pub mod dtos;
+pub mod model;

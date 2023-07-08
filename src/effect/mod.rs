@@ -14,10 +14,9 @@ use reqwest::Client;
 use crate::model::Model;
 
 use self::{
-    conversation::YamlHistory, gpt_context::LongTermGptMemory, gpt_request::GptRequest, output::Output,
-    user::User,
+    conversation::YamlHistory, gpt_context::LongTermGptMemory, gpt_request::GptRequest,
+    output::Output, user::User,
 };
-
 
 //--- Ai Requests ---//
 #[derive(Debug)]
@@ -125,14 +124,8 @@ pub struct ShortMemOutput {
 
 #[async_trait]
 pub trait ShortMemEffect: Sync + Send {
-    async fn save_history(
-        &self,
-        input: &[ShortMemInput],
-    ) -> Result<(), Box<dyn Error>>;
-    async fn get_history(
-        &self,
-        len: usize,
-    ) -> Result<Vec<ShortMemOutput>, Box<dyn Error>>;
+    async fn save_history(&self, input: &[ShortMemInput]) -> Result<(), Box<dyn Error>>;
+    async fn get_history(&self, len: usize) -> Result<Vec<ShortMemOutput>, Box<dyn Error>>;
 }
 
 pub struct Effects {
@@ -145,7 +138,11 @@ pub struct Effects {
 
 impl Effects {
     pub fn new(model: &Model) -> Self {
-        let requester = Box::new(GptRequest::new(Client::new(), model.open_ai_token.clone(), model.clone()));
+        let requester = Box::new(GptRequest::new(
+            Client::new(),
+            model.open_ai_token.clone(),
+            model.clone(),
+        ));
 
         let displayer = Box::new(Output);
         let user_displayer = Box::new(Output);
@@ -155,7 +152,7 @@ impl Effects {
             Client::new(),
             model.context_token.clone(),
             model.memory.top_k,
-            model.config.context_url.to_string()
+            model.config.context_url.to_string(),
         ));
         let history = Box::new(YamlHistory::new(&model.memory.convo_path));
 

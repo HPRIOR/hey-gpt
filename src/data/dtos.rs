@@ -77,7 +77,6 @@ pub struct StreamChatResponseDTO {
     pub object: String,
 }
 
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EditChoiceDTO {
     pub index: i32,

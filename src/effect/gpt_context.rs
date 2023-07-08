@@ -11,14 +11,13 @@ use crate::data::dtos::{
     UpsertResponseDTO,
 };
 
-
 use super::{LongMemEffect, LongMemOutput, LongMemQueryOpt, LongMemSaveInp};
 
 pub struct LongTermGptMemory {
     client: Client,
     bearer_auth: String,
     top_k: u32,
-    context_url: String
+    context_url: String,
 }
 
 impl LongTermGptMemory {
@@ -27,7 +26,7 @@ impl LongTermGptMemory {
             client,
             bearer_auth,
             top_k,
-            context_url
+            context_url,
         }
     }
 }
@@ -128,9 +127,7 @@ impl LongMemEffect for LongTermGptMemory {
                     .metadata
                     .created_at
                     .clone()
-                    .map(|ca| {
-                        ca.parse().unwrap()
-                    })
+                    .map(|ca| ca.parse().unwrap())
                     .unwrap_or(DateTime::<Utc>::MIN_UTC),
                 author: bm.metadata.author.clone().unwrap_or("".to_string()),
                 category: bm.metadata.source_id.clone().unwrap_or("".to_string()),
@@ -164,7 +161,9 @@ mod tests {
     use chrono::Utc;
     use reqwest::Client;
 
-    use crate::effect::{gpt_context::LongTermGptMemory, LongMemEffect, LongMemQueryOpt, QueryWindow, LongMemSaveInp};
+    use crate::effect::{
+        gpt_context::LongTermGptMemory, LongMemEffect, LongMemQueryOpt, LongMemSaveInp, QueryWindow,
+    };
 
     #[tokio::test]
     async fn test_hello_world() {
@@ -178,14 +177,29 @@ mod tests {
 
         let effect: Box<dyn LongMemEffect> = Box::new(context);
 
-        let result = effect.save(&[LongMemSaveInp{text: "This is a new embedding".to_string(), author: "user".to_string()}], "a4c80afe-f225-11ed-a05b-0242ac120003").await;
+        let result = effect
+            .save(
+                &[LongMemSaveInp {
+                    text: "This is a new embedding".to_string(),
+                    author: "user".to_string(),
+                }],
+                "a4c80afe-f225-11ed-a05b-0242ac120003",
+            )
+            .await;
 
         println!("{:#?}", result);
 
-        let query_opt = LongMemQueryOpt{category: "a4c80afe-f225-11ed-a05b-0242ac120003".to_string(),  query_window: QueryWindow { min: None, max: Some(Utc::now()) }};
-        let result = effect.query("can you summerise our conversation so far?", &[query_opt]).await;
+        let query_opt = LongMemQueryOpt {
+            category: "a4c80afe-f225-11ed-a05b-0242ac120003".to_string(),
+            query_window: QueryWindow {
+                min: None,
+                max: Some(Utc::now()),
+            },
+        };
+        let result = effect
+            .query("can you summerise our conversation so far?", &[query_opt])
+            .await;
 
         println!("{:#?}", result);
-
     }
 }

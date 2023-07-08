@@ -58,14 +58,17 @@ impl Action for SuccessState {
                     // save chat history to short term storage
                     let user_input = ShortMemInput {
                         author: "user".to_string(),
-                        content: prompt
+                        content: prompt,
                     };
 
                     let assistant_response = ShortMemInput {
-                        author:  "assistant".to_string(),
-                        content: response
+                        author: "assistant".to_string(),
+                        content: response,
                     };
-                    self.0.history.save_history(&[user_input, assistant_response]).await?;
+                    self.0
+                        .history
+                        .save_history(&[user_input, assistant_response])
+                        .await?;
                 };
             }
             Mode::Edit(_) => (),

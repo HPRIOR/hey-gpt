@@ -1,11 +1,16 @@
 use core::time;
-use std::{thread, error::Error, io::{Write, Read}, process::Command, fs::File};
+use std::{
+    error::Error,
+    fs::File,
+    io::{Read, Write},
+    process::Command,
+    thread,
+};
 
 use tempfile::NamedTempFile;
 use termion::{event::Key, input::TermRead};
 
 use super::{DisplayEffect, InteractionEffect, UserCycleResponse};
-
 
 pub struct User(pub Box<dyn DisplayEffect>);
 
