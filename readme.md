@@ -1,4 +1,4 @@
-# Hey-gpt
+# hey-gpt
 
 A command line interface for chat-gpt
 
