@@ -29,11 +29,11 @@ pub struct CliArgs {
     /// The prompt to give to the model
     pub prompt: String,
 
-    /// Chat model
+    /// Chat model - default: gpt-3.5-turbo
     #[arg(short, long)]
     pub chat_model: Option<String>,
 
-    /// Edit model
+    /// Edit model - default: text-davinci-edit-001
     #[arg(long)]
     pub edit_model: Option<String>,
 
@@ -51,9 +51,9 @@ pub struct CliArgs {
 
     /// Do not prompt user for previews
     #[arg(short = 'y', long)]
-    pub no_preview: Option<bool>,
+    pub no_preview: bool,
 
-    /// Specify environment variable storing openai auth token
+    /// Specify environment variable storing openai auth token - defaults to OPENAI_KEY
     #[arg(long)]
     pub open_ai_token_env: Option<String>,
 
@@ -61,23 +61,24 @@ pub struct CliArgs {
     #[arg(long)]
     pub open_ai_token: Option<String>,
 
-    /// Specify environment variable storing context auth token
+    /// Specify environment variable storing retrieval api bearer auth - defaults to RETRIEVAL_API_BEARER
     #[arg(long)]
-    pub context_ai_token_env: Option<String>,
+    pub retrieval_api_bearer_env: Option<String>,
 
-    /// Token to use for api auth
+    /// Specify retrieval api bearer auth
     #[arg(long)]
-    pub context_ai_token: Option<String>,
+    pub retrieval_api_bearer: Option<String>,
 
-    /// Store and retreive short term convo history
+    /// Store and retreive short term converstation history
     #[arg(long)]
     pub convo: Option<String>,
 
-    /// Store and retreive short term convo history
+    /// Length of short term memory to extract. Defaults to 3
     #[arg(long)]
     pub convo_length: Option<usize>,
 
-    /// Directory containing short term conversation memory files
+    /// Directory containing short term conversation memory files. Defaults to
+    /// $HOME/.config/hey_gpt/conversations
     #[arg(long)]
     pub convo_dir: Option<String>,
 
@@ -85,17 +86,19 @@ pub struct CliArgs {
     #[arg(long)]
     pub act_as: Option<String>,
 
-    /// The number of items to retrieve from vector database when using context
+    /// The number of items to retrieve from vector database when using long term memory. Defaults
+    /// to 3
     #[arg(long)]
     pub top_k: Option<u32>,
 
-    /// retrieve memories for use in query
+    /// Retreive memories from other conversations or sources.
+    /// User must configure access to vector database.
     #[arg(long)]
     pub memories: Option<Vec<String>>,
 
-    /// retrieve memories for use in query
+    /// Store and retrieve conversation history in long term storage
     #[arg(long)]
-    pub memory: Option<bool>,
+    pub memory: bool,
 
     /// Print debug output
     #[arg(long)]
@@ -106,8 +109,8 @@ pub struct CliArgs {
     pub edit: bool,
 
     #[arg(long)]
-    /// Url of context database
-    pub context_url: Option<String>,
+    /// Url of context retrieval api - defaults to http://localhost:5000
+    pub retrieval_plugin_url: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Default)]
@@ -116,20 +119,17 @@ pub struct ConfigArgs {
     pub edit_model: Option<String>,
     pub max_tokens: Option<i32>,
     pub temp: Option<f32>,
-    pub no_preview: Option<bool>,
     pub open_ai_token_env: Option<String>,
     pub open_ai_token: Option<String>,
-    pub context_ai_token_env: Option<String>,
-    pub context_ai_token: Option<String>,
+    pub retrieval_api_bearer_env: Option<String>,
+    pub retrieval_api_bearer: Option<String>,
     pub convo: Option<String>,
     pub convo_length: Option<usize>,
     pub convo_dir: Option<String>,
     pub act_as: Option<String>,
     pub top_k: Option<u32>,
     pub memories: Option<Vec<String>>,
-    pub memory: Option<bool>,
-    pub always_edit: Option<bool>,
-    pub context_url: Option<String>,
+    pub retrieval_plugin_url: Option<String>,
 }
 
 fn get_stdin() -> String {
@@ -152,8 +152,8 @@ impl CliArgs {
         let config_args = {
             let home = env::var("HOME")?;
             let paths = vec![
-                format!("{}/.config/hey_gpt/config", home),
-                format!("{}/hey_gpt/config", home),
+                format!("{}/.config/hey_gpt/config.yaml", home),
+                format!("{}/hey_gpt/config.yaml", home),
             ];
 
             debug!(
@@ -191,13 +191,13 @@ impl CliArgs {
             })
         });
 
-        let user_wants_memory = self.memory.unwrap_or(config_args.memory.unwrap_or(false));
+        let user_wants_memory = self.memory;
 
         // only required if user wants persistant memory
         let context_token = if user_wants_memory {
-            self.context_ai_token.unwrap_or_else(|| {
-                config_args.context_ai_token
-                    .unwrap_or_else(|| match std::env::var(self.context_ai_token_env.unwrap_or(config_args.context_ai_token_env.unwrap_or("AI_CONTEXT_KEY".to_string()))) {
+            self.retrieval_api_bearer.unwrap_or_else(|| {
+                config_args.retrieval_api_bearer
+                    .unwrap_or_else(|| match std::env::var(self.retrieval_api_bearer_env.unwrap_or(config_args.retrieval_api_bearer_env.unwrap_or("RETRIEVAL_API_BEARER".to_string()))) {
                         Ok(token) => token,
                         _ => panic!(
                             "Could not find ai context token in environment and it was not provided by user"
@@ -213,7 +213,7 @@ impl CliArgs {
             let stdin = get_stdin();
             let data_prompt = self.data_prompt.clone();
 
-            if config_args.always_edit.unwrap_or(self.edit) {
+            if self.edit {
                 let edit_data = match (data_prompt, stdin.is_empty()) {
                     (Some(data_prompt), true) | (Some(data_prompt), false) => {
                         EditData::DataFromPrompt(data_prompt)
@@ -256,19 +256,12 @@ impl CliArgs {
 
         let config = Config {
             debug: self.debug,
-            preview_data_generation: self
-                .data_prompt
-                .map(|_| {
-                    !self
-                        .no_preview
-                        .unwrap_or(config_args.no_preview.unwrap_or(false))
-                })
-                .unwrap_or(false),
-            context_url: self.context_url.unwrap_or_else(|| {
+            preview_data_generation: self.data_prompt.map(|_| !self.no_preview).unwrap_or(false),
+            context_url: self.retrieval_plugin_url.unwrap_or_else(|| {
                 if user_wants_memory {
                     config_args
-                        .context_url
-                        .expect("Context url should be set if memory enabled")
+                        .retrieval_plugin_url
+                        .unwrap_or("http://localhost:5000".to_string())
                 } else {
                     String::new()
                 }
@@ -348,7 +341,7 @@ impl CliArgs {
                 .unwrap_or(config_args.convo.unwrap_or(DEFAULT_CONVO.to_string())),
             convo_len: self
                 .convo_length
-                .unwrap_or(config_args.convo_length.unwrap_or(0)),
+                .unwrap_or(config_args.convo_length.unwrap_or(3)),
             convo_path: convo_file_path.to_str().unwrap().to_owned(),
         };
 

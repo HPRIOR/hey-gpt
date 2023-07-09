@@ -94,8 +94,8 @@ impl LongMemEffect for LongTermGptMemory {
                 },
             )
             .collect();
-
         let query_wrapper = RetrievalQueryDTO { queries };
+
         let post_result = self
             .client
             .post(format!("{}/query", self.context_url))
@@ -104,6 +104,7 @@ impl LongMemEffect for LongTermGptMemory {
             .send()
             .await?;
 
+        // dbg!(&post_result.text().await);
         let response = post_result
             .error_for_status()?
             .json::<ResultWrapperDTO>()

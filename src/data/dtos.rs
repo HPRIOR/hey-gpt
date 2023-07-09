@@ -157,7 +157,7 @@ pub struct DocumentResultDTO {
     pub id: String,
     pub text: String,
     pub metadata: DocumentMetaDataDTO,
-    pub embedding: Vec<f64>,
+    pub embedding: Option<Vec<f64>>,
     pub score: f64,
 }
 
