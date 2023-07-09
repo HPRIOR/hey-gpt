@@ -1,6 +1,6 @@
 # hey-gpt
 
-A command line interface for chat-gpt
+A command line interface for chat-gpt with long and short-term memory
 
 ---
 
