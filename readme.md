@@ -28,7 +28,7 @@ hey-gpt 'Sort the input data from most to least incompetent' --data 'Generate a 
 ```bash
 hey-gpt 'This is a great discussion, im glad you will remember it forever' --convo 'great-discussion' 
 ```
-Conversation history will be stored in a yaml file in a local directory and passed to the API on each request. To limit the length of the conversation history use the `--convo-length` argument:
+Conversation history will be stored in a yaml file so that it can be included in future queries. To limit the length of the conversation history use the `--convo-length` argument:
 
 ```bash
 hey-gpt 'This is a great discussion, im glad you will remember at least 3 interactions back' --convo 'great-discussion' --convo-length 3
