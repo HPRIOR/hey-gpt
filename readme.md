@@ -23,7 +23,7 @@ hey-gpt 'Sort the input data from most to least incompetent' --data 'Generate a 
 
 > Without the `--no-preview` argument, user will be asked to accept, retry or edit data prompt
 
-### Store and retrieve 'immediate' conversation history 
+### Store and retrieve conversation history 
 
 ```bash
 hey-gpt 'This is a great discussion, im glad you will remember it forever' --convo 'great-discussion' 
